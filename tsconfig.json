@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "es2017",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "rootDir": "src",
+        "outDir": "dist/",
+    },
+    "include": ["src/"]
+}
