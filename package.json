@@ -1,27 +1,35 @@
 {
-  "name": "processors-list-bot.js",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "dependencies": {
-    "aws-sdk": "^2.761.0",
-    "dotenv": "^8.2.0",
-    "monk": "^7.3.2",
-    "telegraf": "^3.38.0",
-    "telegraf-encommands": "^1.0.1"
-  },
-  "devDependencies": {
-    "@types/node": "^14.11.2",
-    "@typescript-eslint/eslint-plugin": "^4.5.0",
-    "@typescript-eslint/parser": "^4.5.0",
-    "eslint": "^7.11.0",
-    "typescript": "^4.0.3"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsc-watch --onSuccess 'node /dist/bot.js'"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+	"name": "processors-list-bot.js",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"dependencies": {
+		"dotenv": "^8.2.0",
+		"dotenv-flow": "^3.2.0",
+		"dynamo-kvstore": "^1.0.1",
+		"escape-string-regexp": "^4.0.0",
+		"monk": "^7.3.2",
+		"telegraf": "^3.38.0",
+		"telegraf-encommands": "^1.1.5",
+		"telegraf-ratelimit": "^2.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^14.14.6",
+		"@typescript-eslint/eslint-plugin": "^4.5.0",
+		"@typescript-eslint/parser": "^4.5.0",
+		"aws-sdk": "^2.761.0",
+		"eslint": "^7.11.0",
+		"serverless-dotenv-plugin": "^3.1.0",
+		"serverless-offline": "^6.8.0",
+		"tsc-watch": "^4.2.9",
+		"typescript": "^4.0.3"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "set NODE_ENV=development&& tsc-watch --onSuccess \"node ./dist/bot.js\"",
+		"deploy": "node setWebhook.js aws && sls deploy function -f bot --env production && sls logs -f bot -t"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
 }

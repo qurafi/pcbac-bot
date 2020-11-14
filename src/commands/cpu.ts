@@ -1,99 +1,123 @@
-import { matchItem, generateTable } from "../utils/utils";
 import { Extra } from "telegraf";
 import { getCPUPrice } from "./amazon";
-// import * as processors from "../../../data/processors.json";
+import { matchItem, generateTable } from "../utils/utils";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const locale = require("../../localization.json");
+const lc = locale.CPU;
+
 const processors = require("../../data/processors.json");
-
 const isCPULineup = (v) => /(r|i|a)\d?$/gi.test(v);
-const CPU_BRANDS = /amd|intel|ryzen(\s?)(\d?)|athlon|core|xeon|threadripper/gi;
+const CPU_BRANDS = /amd|intel|ryzen(\s?)(\d?(?![^\s]))|athlon|core|xeon|threadripper/gi;
 
 const CPU_KEYS = [
-    ["Process", "Lithography"],
-    ["Base CLK", "BaseFrequency"],
-    ["Boost CLK", "BoostFrequency"],
-    ["Cores"],
-    ["Threads"],
-    ["Cache", "TotalCache"],
-    ["TDP"],
-    ["Socket"],
-    ["Year", "Date"],
-    ["Price", "Price"],
+	["Process", "Lithography"],
+	["Base  CLK", "BaseFrequency"],
+	["Boost CLK", "BoostFrequency"],
+	["Cores"],
+	["Threads"],
+	["Cache", "TotalCache"],
+	["TDP"],
+	["Socket"],
+	["Year", "Date"],
+	["Price"],
 ];
 
 const UNITS = {
-    Lithography: "nm",
-    TotalCache: "MB",
-    BaseFrequency: "GHz",
-    BoostFrequency: "GHz",
-    TDP: "W",
+	Lithography: "nm",
+	TotalCache: "MB",
+	BaseFrequency: "GHz",
+	BoostFrequency: "GHz",
+	TDP: "W",
 };
 
 export const parseCPUArgs = {
-    preProcess: (query: string): string => query.replace(CPU_BRANDS, ""),
-    postProcess: (queries: string[]): string[] => {
-        return queries.map((v, i, arr) => {
-            const last = arr[i - 1];
-            if (!isCPULineup(v)) return v;
-            if (last && isCPULineup(last)) return `${last}-${v}`;
-        });
-    },
+	preParse: (query: string): string => {
+		return query.replace(CPU_BRANDS, "");
+	},
+	postParse: (queries: string[]): string[] => {
+		return queries.map((v, i, arr) => {
+			const last = arr[i - 1];
+			if (!isCPULineup(v)) return v;
+			if (last && isCPULineup(last)) return `${last}-${v}`;
+		});
+	},
 };
 
-function generateCPUTable(items) {
-    let text = generateTable(items, CPU_KEYS, (k, v) => {
-        const u = UNITS[k];
-        if (u) v += u;
-        if (k == "Date") v = "20" + v;
-        return v;
-    });
-    const sep = " ".repeat(5);
-    const links = items.map((v) => {
-        return `[${v.Line} ${v.Model}](${v.Link})`;
-    });
-
-    const chipsets = items[0].Chipset;
-    if (items.length === 1 && chipsets) {
-        text += `\nSupported Motherboards:\n\t ${chipsets}`;
-    }
-
-    return `${links.join(sep + "*vs*" + sep)}\n\n\`${text}\`⠀`;
+function addUnits(k, v) {
+	const u = UNITS[k];
+	if (k == "TotalCache") v = Math.round(v);
+	if (u) v += u;
+	if (k == "Date") v = "20" + v;
+	return v;
 }
 
-async function CPUCommand({ ctx, args, query }) {
-    console.log({ args, query });
-    const { state, items } = matchItem(processors, args);
+function generateCPUTable(items) {
+	let text = generateTable({
+		items,
+		keys: CPU_KEYS,
+		format: addUnits,
+	});
 
-    if (state < 1) {
-        let message = "*No matches";
+	const links = items.map((v) => {
+		return `[${v.Line} ${v.Model}](${v.Link})`;
+	});
 
-        if (items && items.length > 0) {
-            message += ` for :* ${items.join(", ")}`;
-        } else {
-            message += "*";
-        }
+	const chipsets = items[0].Chipset;
+	if (items.length === 1 && chipsets) {
+		text += `\n${lc.SUPPORTED_MOTHERBOARDS}:\n\t ${chipsets}`;
+	}
 
-        return ctx.replyWithMarkdown(message);
-    }
+	return `${links.join("  *vs*  ")}\n\n\`${text}\`⠀`;
+}
 
-    const models = items.map((v) => `${v.Line} ${v.Model}`);
-    const prices = await getCPUPrice(models);
-    items.forEach((v, i) => {
-        const price = prices[i]?.Price;
-        if (price) v.Price = price;
-    });
+async function CPUCommand({ ctx, args }) {
+	let items = matchProcessor(args) as any;
 
-    console.log(models);
+	if (typeof items === "string") {
+		ctx.replyWithMarkdown(items);
+		return;
+	}
 
-    const table = generateCPUTable(items);
-    return ctx.replyWithMarkdown(table, Extra.webPreview(false));
+	items = items.slice(0, 3);
+
+	const models = items.map((v) => `${v.Line} ${v.Model}`);
+	const prices = await getCPUPrice(models);
+
+	prices.forEach((v) => {
+		const { Price, Model } = v;
+		const item = items.find((v) => Model.endsWith(v.Model));
+		if (Price && item) {
+			item.Price = "$" + Math.round(Price.slice(1));
+		}
+	});
+
+	const table = generateCPUTable(items);
+	return ctx.replyWithMarkdown(table, Extra.webPreview(false));
+}
+
+export function matchProcessor(args, noMessage = false) {
+	const { state, items, notFound } = matchItem(processors, args);
+
+	if (state < 1 && !noMessage) {
+		let message = `*${locale.NO_MATCH}`;
+
+		if (notFound && args.length > 1 && notFound.length > 0) {
+			message += ` ${lc.NO_MATCH_LIST} :* ${notFound.join(", ")}`;
+		} else {
+			message += "*";
+		}
+
+		return message;
+	}
+
+	return [...new Set(items)].sort();
 }
 
 export default (commands) => {
-    commands.create("cpu", {
-        helpMessage: "This is help message for cpu",
-        parseArgsOptions: parseCPUArgs,
-        handler: CPUCommand,
-    });
+	return commands.create("cpu", {
+		required: true,
+		helpMessage: lc.help,
+		parserOptions: parseCPUArgs,
+		handler: CPUCommand,
+	});
 };
