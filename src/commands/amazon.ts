@@ -51,7 +51,7 @@ export default (commands): void => {
 	commands.create("amazon", {
 		helpMessage: amznl.help,
 		required: true,
-		parseArgsOptions: parseCPUArgs,
+		parserOptions: parseCPUArgs,
 		handler: AmazonCommand,
 	});
 };

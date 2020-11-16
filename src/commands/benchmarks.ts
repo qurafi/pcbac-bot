@@ -1,8 +1,7 @@
 import { Extra } from "telegraf";
 import { parseCPUArgs } from "./cpu";
-import { format } from "../utils/utils";
+import { format, escapeRegex } from "../utils/utils";
 import { MDB } from "../ddb";
-import escapeRegex from "escape-string-regexp";
 import BENCHMARKS_ALIASES from "./benchmarks-aliases";
 
 const processors = require("../../data/processors.json");
@@ -22,6 +21,7 @@ async function sendBenchmarkResult(ctx, bm, hwtype, m) {
 
 	const _models = m.split(" vs ").map((v) => escapeRegex(v));
 	if (_models[0].length < 3) {
+		ctx.reply(bml.notFound);
 		return;
 	}
 	const models_regex = _models.map((v) => {
@@ -34,6 +34,9 @@ async function sendBenchmarkResult(ctx, bm, hwtype, m) {
 			v = v.replace(/((20|16)\d{2})S/gi, "$1 super");
 
 			v += "(?! *(super|ti|xt))";
+		} else {
+			//cpu
+			v += "(?=\\s|$)";
 		}
 
 		return new RegExp(v);
@@ -47,13 +50,11 @@ async function sendBenchmarkResult(ctx, bm, hwtype, m) {
 		hwtype,
 	};
 	const res = await benchmarks.find(query, { raw: false, sort: { result: -1 } });
-
+	console.log({ res });
 	if (!Array.isArray(res) || res.length === 0) {
 		ctx.reply(bml.notFound);
 		return;
 	}
-
-	console.log({ res });
 
 	const rows = res.map((v) => {
 		const { result, source, model } = v;
@@ -110,7 +111,7 @@ const commandOptions = {
 	required: true,
 	allowEdited: false,
 	helpMessage: format(bml.help, "`model benchmark_name`"),
-	parseArgsOptions: parseCPUArgs,
+	parserOptions: parseCPUArgs,
 	handler: getBenchmarkCommand,
 };
 

@@ -80,6 +80,10 @@ export function generateTable({ items, keys, format, spacing }: gTableParams) {
 	return output;
 }
 
+export function escapeRegex(s) {
+	return s.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&");
+}
+
 export function format(s, ...args) {
 	return s.replace(/%(\d+)/g, (m, i) => {
 		return args[i - 1] || m;
