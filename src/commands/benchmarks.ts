@@ -39,7 +39,7 @@ async function sendBenchmarkResult(ctx, bm, hwtype, m) {
 			v += "(?=\\s|$)";
 		}
 
-		return new RegExp(v);
+		return new RegExp(v, "i");
 	});
 
 	console.log({ bmregex, models_regex });
