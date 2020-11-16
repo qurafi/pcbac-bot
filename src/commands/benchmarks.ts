@@ -29,25 +29,31 @@ async function sendBenchmarkResult(ctx, bm, hwtype, m) {
 		if (hwtype == "gpu") {
 			v = v.replace(/(\d+) *([a-z]{2}$)/gi, (_, p1, p2) => `${p1} *${p2}`);
 
+			v = v.replace(/(rt*x|gtx*)(\d{3,})/gi, (_, p1, p2) => `${p1} *${p2}`);
+
 			v = v.replace(/((20|16)\d{2})S/gi, "$1 super");
 
-			v += " *(?=\\(|$)";
+			v += "(?! *(super|ti|xt))";
 		}
 
 		return new RegExp(v);
 	});
+
+	console.log({ bmregex, models_regex });
 
 	const query = {
 		model: { $in: models_regex },
 		benchmark: { $regex: bmregex },
 		hwtype,
 	};
-	const res = await benchmarks.find(query, { raw: false });
+	const res = await benchmarks.find(query, { raw: false, sort: { result: -1 } });
 
 	if (!Array.isArray(res) || res.length === 0) {
-		ctx.reply(bml.notFoucnd);
+		ctx.reply(bml.notFound);
 		return;
 	}
+
+	console.log({ res });
 
 	const rows = res.map((v) => {
 		const { result, source, model } = v;
@@ -84,15 +90,14 @@ async function getBenchmarkCommand({ ctx, args, command }) {
 			return BENCHMARKS_ALIASES.findIndex((a) => a.includes(v.toLowerCase())) > -1;
 		});
 
-		const hwtype = command.slice(0, 3);
-		const bench = args.slice(si).join("").toLowerCase();
-		const models = args.slice(0, si).join(" ").toLowerCase();
-
-		if (bench.trim() === "") {
+		if (si < 0) {
 			ctx.reply(bml.noName);
 			return;
 		}
 
+		const hwtype = command.slice(0, 3);
+		const bench = args.slice(si).join("").toLowerCase();
+		const models = args.slice(0, si).join(" ").toLowerCase();
 		const benchmark = getBenchmarkAlias(bench);
 		return sendBenchmarkResult(ctx, benchmark, hwtype, models);
 	} catch (e) {

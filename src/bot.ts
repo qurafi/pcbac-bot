@@ -38,6 +38,15 @@ bot.use(
 	})
 );
 
+bot.use((ctx, next) => {
+	const { username: chat, id: chat_id } = ctx.chat;
+	const { username, is_bot, id: uesr_id } = ctx.from;
+	const message = ctx.message;
+	console.log({ chat, chat_id, username, uesr_id, is_bot, message });
+
+	next();
+});
+
 bot.use(protection);
 bot.use(commands.middleware);
 bot.use(linksAnalyser);

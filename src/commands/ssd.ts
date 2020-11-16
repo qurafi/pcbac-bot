@@ -40,8 +40,8 @@ async function SSDCommand({ ctx, query }) {
 		for (const k in data) {
 			if (!basicKeys.includes(k)) continue;
 			let v = data[k];
-			if (v === undefined || v.toString().trim() == "") continue;
-			if (keyFilters[k]) v = keyFilters[k](data[k]);
+			if (!v || v.toString().trim() == "") v = "???";
+			if (keyFilters[k]) v = keyFilters[k](v);
 
 			rows += `*${k.replace("(*)", "")}*: ${v} \n`;
 		}

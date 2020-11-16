@@ -9,6 +9,7 @@ jspm_packages
 data
 src/test.ts
 dist
+setWebhook.js
 
 # Logs
 logs

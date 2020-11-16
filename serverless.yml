@@ -65,6 +65,7 @@ package:
     - src/**
     - ./*
     - dist/test.js
+    - dist/**.map.js
   include:
     - localization.json
     - handler.js

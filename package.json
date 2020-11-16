@@ -27,7 +27,10 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"dev": "set NODE_ENV=development&& tsc-watch --onSuccess \"node ./dist/bot.js\"",
-		"deploy": "node setWebhook.js aws && sls deploy function -f bot --env production && sls logs -f bot -t"
+		"deploy": "sls deploy function -f bot --env production --stage dev",
+		"deploy-p": "sls deploy function -f bot --env production --stage prod",
+		"logs": "sls logs -f bot -t",
+		"logs-p": "sls logs -f bot -t --env production --stage prod"
 	},
 	"keywords": [],
 	"author": "",
